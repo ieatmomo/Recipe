@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.recipe.Recipe.RecipeApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-09-24T23:54:07.193Z" hostname="DEEVESH" time="0.345">
+  <properties/>
+  <testcase name="contextLoads()" classname="com.recipe.Recipe.RecipeApplicationTests" time="0.345"/>
+  <system-out><![CDATA[00:54:02.430 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.recipe.Recipe.RecipeApplicationTests]: RecipeApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:54:02.603 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.recipe.Recipe.RecipeApplication for test class com.recipe.Recipe.RecipeApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.6)
+
+2025-09-25T00:54:03.126+01:00  INFO 52992 --- [Recipe] [    Test worker] c.recipe.Recipe.RecipeApplicationTests   : Starting RecipeApplicationTests using Java 21.0.4 with PID 52992 (started by deeve in C:\Users\deeve\Recipe)
+2025-09-25T00:54:03.127+01:00  INFO 52992 --- [Recipe] [    Test worker] c.recipe.Recipe.RecipeApplicationTests   : No active profile set, falling back to 1 default profile: "default"
+2025-09-25T00:54:03.896+01:00  INFO 52992 --- [Recipe] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-25T00:54:03.963+01:00  INFO 52992 --- [Recipe] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 54 ms. Found 1 JPA repository interface.
+2025-09-25T00:54:04.499+01:00  INFO 52992 --- [Recipe] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-25T00:54:04.577+01:00  INFO 52992 --- [Recipe] [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.29.Final
+2025-09-25T00:54:04.622+01:00  INFO 52992 --- [Recipe] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-09-25T00:54:04.975+01:00  INFO 52992 --- [Recipe] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-25T00:54:05.024+01:00  INFO 52992 --- [Recipe] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-09-25T00:54:05.209+01:00  INFO 52992 --- [Recipe] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@28bd5015
+2025-09-25T00:54:05.211+01:00  INFO 52992 --- [Recipe] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-09-25T00:54:05.258+01:00  WARN 52992 --- [Recipe] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-09-25T00:54:05.278+01:00  INFO 52992 --- [Recipe] [    Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.40
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-09-25T00:54:06.006+01:00  INFO 52992 --- [Recipe] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-25T00:54:06.046+01:00  INFO 52992 --- [Recipe] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-25T00:54:06.465+01:00  WARN 52992 --- [Recipe] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-25T00:54:07.167+01:00  INFO 52992 --- [Recipe] [    Test worker] c.recipe.Recipe.RecipeApplicationTests   : Started RecipeApplicationTests in 4.344 seconds (process running for 5.769)
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\deeve\.gradle\caches\modules-2\files-2.1\net.bytebuddy\byte-buddy-agent\1.17.7\fbf3d6d649ed37fc9e9c59480a05be0a26e3c2da\byte-buddy-agent-1.17.7.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

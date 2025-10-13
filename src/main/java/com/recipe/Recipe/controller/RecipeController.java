@@ -2,7 +2,7 @@ package com.recipe.Recipe.controller;
 
 
 import com.recipe.Recipe.model.RecipeEntity;
-
+import com.recipe.Recipe.service.KafkaEventService;
 import com.recipe.Recipe.service.RecipeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +23,12 @@ import java.util.List;
 public class RecipeController{
 
     RecipeService recipeService;
+    KafkaEventService kafkaEventService;
 
     @Autowired
-    public RecipeController(RecipeService recipeService) {
+    public RecipeController(RecipeService recipeService, KafkaEventService kafkaEventService) {
         this.recipeService = recipeService;
+        this.kafkaEventService = kafkaEventService;
     }
 
     @GetMapping ("getAllRecipes")
@@ -43,21 +45,22 @@ public class RecipeController{
     }
 
     @PostMapping("/addRecipe")
-    public ResponseEntity<RecipeEntity> addRecipe(@RequestBody RecipeEntity recipe){
-    
-        return recipeService.addRecipe(recipe);
+    public ResponseEntity<String> addRecipe(@RequestBody RecipeEntity recipe){
+        kafkaEventService.publishRecipeCreatedEvent(recipe);
+        return ResponseEntity.ok("Recipe creation event published!");
     }
 
     @PutMapping("/updateRecipeById/{id}")
-    public ResponseEntity<RecipeEntity> updateRecipeById(@PathVariable("id") long id, @RequestBody RecipeEntity newRecipeData){
-        
-        return recipeService.updateRecipeById(id, newRecipeData);
+    public ResponseEntity<String> updateRecipeById(@PathVariable("id") long id, @RequestBody RecipeEntity newRecipeData){
+        newRecipeData.setId(id);
+        kafkaEventService.publishRecipeUpdatedEvent(newRecipeData);
+        return ResponseEntity.ok("Recipe Update event published!");
     }
 
     @DeleteMapping("/deleteRecipeById/{id}")
-    public ResponseEntity<HttpStatus> deleteRecipeById(@PathVariable("id") long id){
-    
-        return recipeService.deleteRecipeById(id);
+    public ResponseEntity<String> deleteRecipeById(@PathVariable("id") long id){
+        kafkaEventService.publishRecipeDeletedEvent(id);
+        return ResponseEntity.ok("Recipe Deletion event published!");
     }
 
 }

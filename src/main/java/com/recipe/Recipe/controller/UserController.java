@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,8 +43,6 @@ public class UserController {
         return service.addUser(userInfo);
     }
 
-    // Removed the role checks here as they are already managed in SecurityConfig
-
     @PostMapping("/generateToken")
     public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -54,4 +54,11 @@ public class UserController {
             throw new UsernameNotFoundException("Invalid user request!");
         }
     }
+
+    @GetMapping("/getUserByEmail/{email}")
+    public String getUserByEmail(@PathVariable("email") String email) {
+        String name = service.getUsernameByEmail(email);
+        return name != null ? name : "User not found";
+    }
+
 }

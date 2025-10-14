@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -29,6 +30,10 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 @EnableKafka
 public class KafkaConfig {
 
+    // read from spring property (falls back to kafka:9092)
+    @Value("${spring.kafka.bootstrap-servers:kafka:9092}")
+    private String bootstrapServers;
+
     // ---------------- PRODUCER CONFIGURATION ----------------
 
     // Defines how Kafka producers (message senders) should be created and configured
@@ -36,8 +41,8 @@ public class KafkaConfig {
     public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> config = new HashMap<>();
 
-        // Address of the Kafka broker (localhost:9092 is default when running Kafka locally)
-        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        // use injected bootstrap servers instead of hard-coded localhost
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
         // Serializer for the key — converts String keys into bytes before sending
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -63,8 +68,8 @@ public class KafkaConfig {
     public ConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> config = new HashMap<>();
 
-        // Address of the Kafka broker (same as above)
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        // use injected bootstrap servers instead of hard-coded localhost
+        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
         // The group ID — consumers in the same group share messages (like load balancing)
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "recipe-group");

@@ -26,8 +26,7 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
-
-    // ✅ Inject JwtAuthFilter lazily to break the cycle
+    
     public SecurityConfig(@Lazy JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;

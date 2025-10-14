@@ -30,7 +30,7 @@ public class RecipeEntity{
 
     private String description;
 
-    private String ingredients; // Changed from List<String> to String
+    private String ingredients;
 
     public String getName(){
         return name;
@@ -56,7 +56,7 @@ public class RecipeEntity{
         this.description = description;
     }
 
-    public String getIngredients(){ // Fixed typo from getIngreidents
+    public String getIngredients(){ 
         return ingredients;
     }
 

@@ -11,13 +11,11 @@ import org.springframework.stereotype.Service;
 import com.recipe.Recipe.model.UserInfo;
 import com.recipe.Recipe.repo.sec.UserInfoRepository;
 
-import java.util.Optional;
-
 @Service
 public class UserInfoService implements UserDetailsService {
 
     private final UserInfoRepository repository;
-    private final PasswordEncoder encoder; // no circular bean here
+    private final PasswordEncoder encoder;
 
     @Autowired
     public UserInfoService(UserInfoRepository repository, @Lazy PasswordEncoder encoder) {
@@ -36,5 +34,9 @@ public class UserInfoService implements UserDetailsService {
         userInfo.setPassword(encoder.encode(userInfo.getPassword()));
         repository.save(userInfo);
         return "User added successfully!";
+    }
+
+    public String getUsernameByEmail(String email) {
+        return repository.findByEmail(email).map(UserInfo::getName).orElse(null);
     }
 }

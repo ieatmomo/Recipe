@@ -19,7 +19,10 @@ public class RecipeSearchEntity {
     @Field(type = FieldType.Text)
     private String description;
 
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Text)
+    private String author;
+
+    @Field(type = FieldType.Text)
     private String ingredients;
 
 
@@ -46,7 +49,15 @@ public class RecipeSearchEntity {
         this.description = description;
     }
 
-    public String getIngreidents(){
+    public String getAuthor(){
+        return author;
+    }
+
+    public void setAuthor(String author){
+        this.author = author;
+    }
+
+    public String getIngredients(){
         return ingredients;
     }
 

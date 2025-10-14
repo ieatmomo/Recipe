@@ -62,6 +62,7 @@ public class RecipeService {
         RecipeSearchEntity searchEntity = new RecipeSearchEntity();
         searchEntity.setId(recipeObj.getId());
         searchEntity.setName(recipeObj.getName());
+        searchEntity.setAuthor(recipeObj.getAuthor()); 
         searchEntity.setDescription(recipeObj.getDescription());
         searchEntity.setIngredients(recipeObj.getIngredients());
         
@@ -86,6 +87,7 @@ public class RecipeService {
             RecipeSearchEntity searchEntity = new RecipeSearchEntity();
             searchEntity.setId(recipeObj.getId());
             searchEntity.setName(recipeObj.getName());
+            searchEntity.setAuthor(recipeObj.getAuthor());
             searchEntity.setDescription(recipeObj.getDescription());
             searchEntity.setIngredients(recipeObj.getIngredients());
             elasticService.save(searchEntity);
@@ -109,6 +111,7 @@ public class RecipeService {
             RecipeSearchEntity searchEntity = new RecipeSearchEntity();
             searchEntity.setId(recipe.getId());
             searchEntity.setName(recipe.getName());
+            searchEntity.setAuthor(recipe.getAuthor());
             searchEntity.setDescription(recipe.getDescription());
             searchEntity.setIngredients(recipe.getIngredients());
             elasticService.save(searchEntity);

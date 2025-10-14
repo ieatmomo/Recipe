@@ -117,4 +117,11 @@ public class RecipeService {
             elasticService.save(searchEntity);
         }
     }
+
+    public ResponseEntity<String> getStats(){
+        ResponseEntity<List<RecipeEntity>> all = getAllRecipes();
+        int recipeCount = all.getBody().size();
+        String stat = "Recipe Count: " + recipeCount;
+        return ResponseEntity.ok(stat);
+    }
 }

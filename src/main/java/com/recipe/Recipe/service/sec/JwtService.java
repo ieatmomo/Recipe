@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import com.recipe.Recipe.model.UserInfo;
+
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,8 +22,18 @@ public class JwtService {
 
     public static final String SECRET = "5367566859703373367639792F423F452848284D6251655468576D5A71347437";
 
-    public String generateToken(String email) {
+    public String generateToken(String email, String roles) {
+        return generateToken(email, roles, null);
+    }
+
+    public String generateToken(String email, String roles, String region) {
         Map<String, Object> claims = new HashMap<>();
+        if (roles != null && !roles.isEmpty()) {
+            claims.put("roles", roles);
+        }
+        if (region != null && !region.isEmpty()) {
+            claims.put("region", region);
+        }
         return createToken(claims, email);
     }
 

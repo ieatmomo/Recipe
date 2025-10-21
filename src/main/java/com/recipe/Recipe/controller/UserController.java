@@ -28,9 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserInfoService service;
-
     private final JwtService jwtService;
-
     private final AuthenticationManager authenticationManager;
 
     @GetMapping("/welcome")
@@ -49,7 +47,14 @@ public class UserController {
             new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
         );
         if (authentication.isAuthenticated()) {
-            return jwtService.generateToken(authRequest.getUsername());
+            String username = authRequest.getUsername();
+            String roles = authentication.getAuthorities().stream()
+                    .map(grantedAuthority -> grantedAuthority.getAuthority())
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse("");
+            // get region from DB
+            String region = service.getRegionByEmail(username);
+            return jwtService.generateToken(username, roles, region);
         } else {
             throw new UsernameNotFoundException("Invalid user request!");
         }
@@ -59,6 +64,13 @@ public class UserController {
     public String getUserByEmail(@PathVariable("email") String email) {
         String name = service.getUsernameByEmail(email);
         return name != null ? name : "User not found";
+    }
+
+    @GetMapping("/region")
+    public String getMyRegion(Authentication auth) {
+        String email = auth.getName();
+        String region = service.getRegionByEmail(email);
+        return region != null ? region : "unknown";
     }
 
 }

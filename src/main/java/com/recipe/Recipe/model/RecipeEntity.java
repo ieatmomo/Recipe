@@ -34,6 +34,8 @@ public class RecipeEntity{
 
     private String region;
 
+    private String category;
+
     public String getName(){
         return name;
     }
@@ -72,5 +74,13 @@ public class RecipeEntity{
 
     public void setRegion(String region){
         this.region = region;
+    }
+
+    public String getCategory(){
+        return category;
+    }
+
+    public void setCategory(String category){
+        this.category = category;
     }
 }

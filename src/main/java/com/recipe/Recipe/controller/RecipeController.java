@@ -52,7 +52,6 @@ public class RecipeController{
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
-        // set ownership to current user
         recipe.setAuthor(authentication.getName());
         kafkaEventService.publishRecipeCreatedEvent(recipe);
         return ResponseEntity.ok("Recipe creation event published!");

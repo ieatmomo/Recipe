@@ -77,10 +77,9 @@ public class RecipeService {
         if (oldRecipeData.isPresent()){
             RecipeEntity updatedRecipeData = oldRecipeData.get();
             updatedRecipeData.setName(newRecipeData.getName());
-            // do NOT allow changing author (ownership)
-            // updatedRecipeData.setAuthor(newRecipeData.getAuthor());
             updatedRecipeData.setDescription(newRecipeData.getDescription());
             updatedRecipeData.setIngredients(newRecipeData.getIngredients());
+            updatedRecipeData.setCategory(newRecipeData.getCategory());
 
             RecipeEntity recipeObj = recipeRepo.save(updatedRecipeData);
             

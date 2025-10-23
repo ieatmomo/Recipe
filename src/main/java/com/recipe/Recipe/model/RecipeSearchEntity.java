@@ -1,17 +1,14 @@
 package com.recipe.Recipe.model;
 
-import java.util.List;
-
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import jakarta.persistence.Id;
-
 @Document(indexName = "recipes")
 public class RecipeSearchEntity {
     @Id
-    private Long id;
+    private String id;
 
     @Field(type = FieldType.Text)
     private String name;
@@ -25,44 +22,37 @@ public class RecipeSearchEntity {
     @Field(type = FieldType.Text)
     private String ingredients;
 
+    @Field(type = FieldType.Keyword)
+    private String region;
 
-    public Long getId(){
-        return id;
-    }
+    @Field(type = FieldType.Keyword)
+    private String category;
 
-    public void setId(Long id){
-        this.id = id;
-    }
-    public String getName(){
-        return name;
-    }
+    // External dataset fields
+    @Field(type = FieldType.Text, name = "meal_name")
+    private String mealName;
 
-    public void setName(String name){
-        this.name = name;
-    }
+    @Field(type = FieldType.Text, name = "meal_id")
+    private String mealId;
 
-    public String getDescription(){
-        return description;
-    }
+    // Optional: external area/instructions exist, but not needed here
 
-    public void setDescription(String description){
-        this.description = description;
-    }
-
-    public String getAuthor(){
-        return author;
-    }
-
-    public void setAuthor(String author){
-        this.author = author;
-    }
-
-    public String getIngredients(){
-        return ingredients;
-    }
-
-    public void setIngredients(String ingredients){
-        this.ingredients = ingredients;
-    }
-
+    public String getId(){ return id; }
+    public void setId(String id){ this.id = id; }
+    public String getName(){ return name; }
+    public void setName(String name){ this.name = name; }
+    public String getDescription(){ return description; }
+    public void setDescription(String description){ this.description = description; }
+    public String getAuthor(){ return author; }
+    public void setAuthor(String author){ this.author = author; }
+    public String getIngredients(){ return ingredients; }
+    public void setIngredients(String ingredients){ this.ingredients = ingredients; }
+    public String getRegion(){ return region; }
+    public void setRegion(String region){ this.region = region; }
+    public String getCategory(){ return category; }
+    public void setCategory(String category){ this.category = category; }
+    public String getMealName() { return mealName; }
+    public void setMealName(String mealName) { this.mealName = mealName; }
+    public String getMealId() { return mealId; }
+    public void setMealId(String mealId) { this.mealId = mealId; }
 }

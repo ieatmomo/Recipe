@@ -26,7 +26,11 @@ public class RecipeEntity{
 
     private String name;
 
+    // display name (from UserInfo.name)
     private String author;
+
+    // stable owner identifier for permission checks
+    private String ownerEmail;
 
     private String description;
 

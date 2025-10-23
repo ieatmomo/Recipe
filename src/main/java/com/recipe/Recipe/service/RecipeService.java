@@ -6,9 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.recipe.Recipe.model.RecipeEntity;
 import com.recipe.Recipe.model.RecipeSearchEntity;
-import com.recipe.Recipe.repo.es.ElasticRepo;
 import com.recipe.Recipe.repo.jpa.RecipeRepo;
-import com.recipe.Recipe.service.ElasticService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +19,6 @@ import java.util.Optional;
 
 @Service
 public class RecipeService {
-    
     RecipeRepo recipeRepo;
     ElasticService elasticService; 
 
@@ -35,11 +32,21 @@ public class RecipeService {
         try{
             List<RecipeEntity> recipeList = new ArrayList<>();
             recipeRepo.findAll().forEach(recipeList::add);
-
             if (recipeList.isEmpty()){
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
+            return new ResponseEntity<>(recipeList, HttpStatus.OK);
+        } catch(Exception ex){
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
+    public ResponseEntity<List<RecipeEntity>> getAllRecipesByRegion(String region){
+        try{
+            List<RecipeEntity> recipeList = recipeRepo.findByRegionIgnoreCase(region);
+            if (recipeList.isEmpty()){
+                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            }
             return new ResponseEntity<>(recipeList, HttpStatus.OK);
         } catch(Exception ex){
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -48,32 +55,30 @@ public class RecipeService {
 
     public ResponseEntity<RecipeEntity> getRecipeById(@PathVariable("id") Long id){
         Optional<RecipeEntity> recipeData = recipeRepo.findById(id);
-
         if (recipeData.isPresent()){
             return new ResponseEntity<>(recipeData.get(), HttpStatus.OK);
         }
-
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     public ResponseEntity<RecipeEntity> addRecipe(@RequestBody RecipeEntity recipe){
         RecipeEntity recipeObj = recipeRepo.save(recipe);
-        
+
         RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-        searchEntity.setId(recipeObj.getId());
+        searchEntity.setId(String.valueOf(recipeObj.getId()));
         searchEntity.setName(recipeObj.getName());
         searchEntity.setAuthor(recipeObj.getAuthor()); 
         searchEntity.setDescription(recipeObj.getDescription());
         searchEntity.setIngredients(recipeObj.getIngredients());
-        
+        searchEntity.setRegion(recipeObj.getRegion());
+        searchEntity.setCategory(recipeObj.getCategory());
+
         elasticService.save(searchEntity);
-        
         return new ResponseEntity<>(recipeObj, HttpStatus.OK);
     }
 
     public ResponseEntity<RecipeEntity> updateRecipeById(@PathVariable("id") Long id, @RequestBody RecipeEntity newRecipeData){
         Optional<RecipeEntity> oldRecipeData = recipeRepo.findById(id);
-
         if (oldRecipeData.isPresent()){
             RecipeEntity updatedRecipeData = oldRecipeData.get();
             updatedRecipeData.setName(newRecipeData.getName());
@@ -82,25 +87,34 @@ public class RecipeService {
             updatedRecipeData.setCategory(newRecipeData.getCategory());
 
             RecipeEntity recipeObj = recipeRepo.save(updatedRecipeData);
-            
+
             RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-            searchEntity.setId(recipeObj.getId());
+            searchEntity.setId(String.valueOf(recipeObj.getId()));
             searchEntity.setName(recipeObj.getName());
             searchEntity.setAuthor(recipeObj.getAuthor());
             searchEntity.setDescription(recipeObj.getDescription());
             searchEntity.setIngredients(recipeObj.getIngredients());
+            searchEntity.setRegion(recipeObj.getRegion());
+            searchEntity.setCategory(recipeObj.getCategory());
             elasticService.save(searchEntity);
-            
+
             return new ResponseEntity<>(recipeObj, HttpStatus.OK);
         }
-
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    public ResponseEntity<HttpStatus> deleteRecipeById(@PathVariable("id") Long id){
-        recipeRepo.deleteById(id);
-        elasticService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<String> deleteRecipeById(Long id) {
+        try {
+            if (!recipeRepo.existsById(id)) {
+                elasticService.deleteById(id);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            recipeRepo.deleteById(id);
+            elasticService.deleteById(id);
+            return ResponseEntity.ok("Recipe deleted");
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostConstruct
@@ -108,11 +122,13 @@ public class RecipeService {
         List<RecipeEntity> allRecipes = recipeRepo.findAll();
         for (RecipeEntity recipe : allRecipes) {
             RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-            searchEntity.setId(recipe.getId());
+            searchEntity.setId(String.valueOf(recipe.getId()));
             searchEntity.setName(recipe.getName());
             searchEntity.setAuthor(recipe.getAuthor());
             searchEntity.setDescription(recipe.getDescription());
             searchEntity.setIngredients(recipe.getIngredients());
+            searchEntity.setRegion(recipe.getRegion());
+            searchEntity.setCategory(recipe.getCategory());
             elasticService.save(searchEntity);
         }
     }

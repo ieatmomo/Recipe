@@ -5,7 +5,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-@Document(indexName = "recipes")
+@Document(indexName = "recipes_system")
 public class RecipeSearchEntity {
     @Id
     private String id;
@@ -35,7 +35,6 @@ public class RecipeSearchEntity {
     @Field(type = FieldType.Text, name = "meal_id")
     private String mealId;
 
-    // Optional: external area/instructions exist, but not needed here
 
     public String getId(){ return id; }
     public void setId(String id){ this.id = id; }

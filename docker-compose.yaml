@@ -77,6 +77,19 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+  
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.29  
+    container_name: kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - recipe-network
 
   # Spring Boot 
   backend:

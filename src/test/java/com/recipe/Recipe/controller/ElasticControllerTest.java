@@ -1,6 +1,5 @@
 package com.recipe.Recipe.controller;
 
-import com.recipe.Recipe.dto.MealSummary;
 import com.recipe.Recipe.model.RecipeSearchEntity;
 import com.recipe.Recipe.service.ElasticService;
 import com.recipe.Recipe.service.sec.UserInfoService;
@@ -18,11 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 

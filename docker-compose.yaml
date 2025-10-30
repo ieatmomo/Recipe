@@ -77,7 +77,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-  
+
+  #Kibana: 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.29  
     container_name: kibana

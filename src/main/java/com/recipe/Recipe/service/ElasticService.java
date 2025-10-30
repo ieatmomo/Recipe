@@ -18,10 +18,10 @@ import com.recipe.Recipe.repo.es.MealRepo;
 public class ElasticService {
     
     @Autowired
-    ElasticRepo elasticRepo; // user recipes
+    ElasticRepo elasticRepo;
     
     @Autowired
-    MealRepo mealRepo; // external dataset
+    MealRepo mealRepo;
 
     public ElasticService(ElasticRepo elasticRepo, MealRepo mealRepo){
         this.elasticRepo = elasticRepo;

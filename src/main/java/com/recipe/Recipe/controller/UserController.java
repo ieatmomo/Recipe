@@ -52,7 +52,6 @@ public class UserController {
                     .map(grantedAuthority -> grantedAuthority.getAuthority())
                     .reduce((a, b) -> a + "," + b)
                     .orElse("");
-            // get region from DB
             String region = service.getRegionByEmail(username);
             return jwtService.generateToken(username, roles, region);
         } else {

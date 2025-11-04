@@ -1,12 +1,12 @@
-package com.recipe.Recipe.service;
+package com.recipe.Recipe.recipe_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import com.recipe.Recipe.model.RecipeEntity;
-import com.recipe.Recipe.model.RecipeSearchEntity;
-import com.recipe.Recipe.repo.jpa.RecipeRepo;
+import com.recipe.Recipe.recipe_service.RecipeEntity;
+import com.recipe.Recipe.model.RecipeSearchEntity;  //Need to connect via HTTP
+import com.recipe.Recipe.recipe_service.RecipeRepo;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

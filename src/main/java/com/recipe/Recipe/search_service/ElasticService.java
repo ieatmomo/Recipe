@@ -1,4 +1,4 @@
-package com.recipe.Recipe.service;
+package com.recipe.Recipe.search_service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,11 +8,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.recipe.Recipe.dto.MealSummary;
-import com.recipe.Recipe.model.MealSearchEntity;
-import com.recipe.Recipe.model.RecipeSearchEntity;
-import com.recipe.Recipe.repo.es.ElasticRepo;
-import com.recipe.Recipe.repo.es.MealRepo;
+import com.recipe.Recipe.search_service.MealSummary;
+import com.recipe.Recipe.search_service.MealSearchEntity;
+import com.recipe.Recipe.search_service.RecipeSearchEntity;
+import com.recipe.Recipe.search_service.ElasticRepo;
+import com.recipe.Recipe.search_service.MealRepo;
 
 @Service
 public class ElasticService {

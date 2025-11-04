@@ -1,4 +1,4 @@
-package com.recipe.Recipe.model;
+package com.recipe.Recipe.search_service;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;

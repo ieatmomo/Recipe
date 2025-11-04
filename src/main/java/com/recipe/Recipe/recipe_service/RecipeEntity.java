@@ -1,4 +1,4 @@
-package com.recipe.Recipe.model;
+package com.recipe.Recipe.recipe_service;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

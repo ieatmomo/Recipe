@@ -1,11 +1,11 @@
-package com.recipe.Recipe.repo.es;
+package com.recipe.Recipe.search_service;
 
 import java.util.List;
 
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
-import com.recipe.Recipe.model.RecipeSearchEntity;
+import com.recipe.Recipe.search_service.RecipeSearchEntity;
 
 @Repository
 public interface ElasticRepo extends ElasticsearchRepository<RecipeSearchEntity, String> {

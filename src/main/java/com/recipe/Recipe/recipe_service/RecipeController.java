@@ -1,9 +1,9 @@
-package com.recipe.Recipe.controller;
+package com.recipe.Recipe.recipe_service;
 
-import com.recipe.Recipe.model.RecipeEntity;
-import com.recipe.Recipe.service.KafkaEventService;
-import com.recipe.Recipe.service.RecipeService;
-import com.recipe.Recipe.service.sec.UserInfoService;
+import com.recipe.Recipe.recipe_service.RecipeEntity;
+import com.recipe.Recipe.service.KafkaEventService;  //Need to connect Via HTTP
+import com.recipe.Recipe.recipe_service.RecipeService;
+import com.recipe.Recipe.service.sec.UserInfoService;  //Need to connect Via HTTP
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

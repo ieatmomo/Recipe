@@ -1,4 +1,4 @@
-package com.recipe.Recipe.config;
+package com.recipe.Recipe.kafka_service;
 
 import java.util.HashMap;
 import java.util.Map;

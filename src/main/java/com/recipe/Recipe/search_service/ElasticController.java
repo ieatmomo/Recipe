@@ -1,4 +1,4 @@
-package com.recipe.Recipe.controller;
+package com.recipe.Recipe.search_service;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.recipe.Recipe.dto.MealSummary;
-import com.recipe.Recipe.model.RecipeSearchEntity;
-import com.recipe.Recipe.service.ElasticService;
-import com.recipe.Recipe.service.sec.UserInfoService;
+import com.recipe.Recipe.search_service.MealSummary;
+import com.recipe.Recipe.search_service.RecipeSearchEntity;
+import com.recipe.Recipe.search_service.ElasticService;
+import com.recipe.Recipe.service.sec.UserInfoService; //Connect Via HTTP
 
 @RestController
 public class ElasticController {

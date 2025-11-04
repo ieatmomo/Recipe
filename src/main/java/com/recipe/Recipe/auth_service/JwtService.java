@@ -1,4 +1,4 @@
-package com.recipe.Recipe.service.sec;
+package com.recipe.Recipe.auth_service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.recipe.Recipe.model.UserInfo;
+import com.recipe.Recipe.auth_service.UserInfo;
 
 import java.security.Key;
 import java.util.Date;

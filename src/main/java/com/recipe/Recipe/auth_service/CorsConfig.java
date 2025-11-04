@@ -1,4 +1,4 @@
-package com.recipe.Recipe.config;
+package com.recipe.Recipe.auth_service;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

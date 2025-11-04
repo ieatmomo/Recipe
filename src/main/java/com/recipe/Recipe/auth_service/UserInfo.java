@@ -1,4 +1,4 @@
-package com.recipe.Recipe.model;
+package com.recipe.Recipe.auth_service;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

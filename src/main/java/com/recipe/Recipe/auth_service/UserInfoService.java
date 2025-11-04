@@ -1,4 +1,4 @@
-package com.recipe.Recipe.service.sec;
+package com.recipe.Recipe.auth_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -8,8 +8,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.recipe.Recipe.model.UserInfo;
-import com.recipe.Recipe.repo.sec.UserInfoRepository;
+import com.recipe.Recipe.auth_service.UserInfo;
+import com.recipe.Recipe.auth_service.UserInfoRepository;
 
 import java.util.Optional;
 import java.util.Locale;

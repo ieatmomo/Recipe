@@ -1,4 +1,4 @@
-package com.recipe.Recipe.model;
+package com.recipe.Recipe.auth_service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

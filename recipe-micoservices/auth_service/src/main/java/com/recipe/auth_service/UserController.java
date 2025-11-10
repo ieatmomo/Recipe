@@ -72,4 +72,17 @@ public class UserController {
         return region != null ? region : "unknown";
     }
 
+    // New endpoints for inter-service communication
+    @GetMapping("/region/{email}")
+    public String getRegionByEmail(@PathVariable("email") String email) {
+        String region = service.getRegionByEmail(email);
+        return region != null ? region : "";
+    }
+
+    @GetMapping("/username/{email}")
+    public String getUsernameByEmail(@PathVariable("email") String email) {
+        String name = service.getUsernameByEmail(email);
+        return name != null ? name : "";
+    }
+
 }

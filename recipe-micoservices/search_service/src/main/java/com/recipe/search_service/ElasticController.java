@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.recipe.Recipe.search_service.MealSummary;
 import com.recipe.Recipe.search_service.RecipeSearchEntity;
 import com.recipe.Recipe.search_service.ElasticService;
-import com.recipe.Recipe.service.sec.UserInfoService; //Connect Via HTTP
+import com.recipe.common.clients.AuthServiceClient;
 
 @RestController
 public class ElasticController {
@@ -22,7 +22,7 @@ public class ElasticController {
     ElasticService elasticService;
 
     @Autowired
-    UserInfoService userInfoService;
+    AuthServiceClient authServiceClient;
 
     public ElasticController(ElasticService elasticService){
         this.elasticService = elasticService;
@@ -39,7 +39,7 @@ public class ElasticController {
         if (isAdmin) {
             return elasticService.search(query);
         }
-        String region = userInfoService.getRegionByEmail(authentication.getName());
+        String region = authServiceClient.getRegionByEmail(authentication.getName());
         if (region == null || region.isBlank()) {
             return Collections.emptyList();
         }

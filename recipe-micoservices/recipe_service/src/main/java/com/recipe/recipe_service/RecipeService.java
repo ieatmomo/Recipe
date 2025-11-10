@@ -4,28 +4,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import com.recipe.Recipe.recipe_service.RecipeEntity;
-import com.recipe.Recipe.model.RecipeSearchEntity;  //Need to connect via HTTP
+import com.recipe.common.entities.RecipeEntity;
 import com.recipe.Recipe.recipe_service.RecipeRepo;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class RecipeService {
-    RecipeRepo recipeRepo;
-    ElasticService elasticService; 
+    private final RecipeRepo recipeRepo;
 
     @Autowired
-    public RecipeService(RecipeRepo recipeRepo, ElasticService elasticService){
+    public RecipeService(RecipeRepo recipeRepo){
         this.recipeRepo = recipeRepo;
-        this.elasticService = elasticService;
     }
 
     public ResponseEntity<List<RecipeEntity>> getAllRecipes(){
@@ -63,17 +59,7 @@ public class RecipeService {
 
     public ResponseEntity<RecipeEntity> addRecipe(@RequestBody RecipeEntity recipe){
         RecipeEntity recipeObj = recipeRepo.save(recipe);
-
-        RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-        searchEntity.setId(String.valueOf(recipeObj.getId()));
-        searchEntity.setName(recipeObj.getName());
-        searchEntity.setAuthor(recipeObj.getAuthor()); 
-        searchEntity.setDescription(recipeObj.getDescription());
-        searchEntity.setIngredients(recipeObj.getIngredients());
-        searchEntity.setRegion(recipeObj.getRegion());
-        searchEntity.setCategory(recipeObj.getCategory());
-
-        elasticService.save(searchEntity);
+        // Elasticsearch indexing will be handled by Kafka consumer
         return new ResponseEntity<>(recipeObj, HttpStatus.OK);
     }
 
@@ -87,17 +73,7 @@ public class RecipeService {
             updatedRecipeData.setCategory(newRecipeData.getCategory());
 
             RecipeEntity recipeObj = recipeRepo.save(updatedRecipeData);
-
-            RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-            searchEntity.setId(String.valueOf(recipeObj.getId()));
-            searchEntity.setName(recipeObj.getName());
-            searchEntity.setAuthor(recipeObj.getAuthor());
-            searchEntity.setDescription(recipeObj.getDescription());
-            searchEntity.setIngredients(recipeObj.getIngredients());
-            searchEntity.setRegion(recipeObj.getRegion());
-            searchEntity.setCategory(recipeObj.getCategory());
-            elasticService.save(searchEntity);
-
+            // Elasticsearch indexing will be handled by Kafka consumer
             return new ResponseEntity<>(recipeObj, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -106,36 +82,19 @@ public class RecipeService {
     public ResponseEntity<String> deleteRecipeById(Long id) {
         try {
             if (!recipeRepo.existsById(id)) {
-                elasticService.deleteById(id);
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             recipeRepo.deleteById(id);
-            elasticService.deleteById(id);
+            // Elasticsearch deletion will be handled by Kafka consumer
             return ResponseEntity.ok("Recipe deleted");
         } catch (Exception ex) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @PostConstruct
-    public void syncDataToElasticsearch() {
-        List<RecipeEntity> allRecipes = recipeRepo.findAll();
-        for (RecipeEntity recipe : allRecipes) {
-            RecipeSearchEntity searchEntity = new RecipeSearchEntity();
-            searchEntity.setId(String.valueOf(recipe.getId()));
-            searchEntity.setName(recipe.getName());
-            searchEntity.setAuthor(recipe.getAuthor());
-            searchEntity.setDescription(recipe.getDescription());
-            searchEntity.setIngredients(recipe.getIngredients());
-            searchEntity.setRegion(recipe.getRegion());
-            searchEntity.setCategory(recipe.getCategory());
-            elasticService.save(searchEntity);
-        }
-    }
-
     public ResponseEntity<String> getStats(){
         ResponseEntity<List<RecipeEntity>> all = getAllRecipes();
-        int recipeCount = all.getBody().size();
+        int recipeCount = all.getBody() != null ? all.getBody().size() : 0;
         String stat = "Recipe Count: " + recipeCount;
         return ResponseEntity.ok(stat);
     }

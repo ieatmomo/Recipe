@@ -1,13 +1,13 @@
 package com.recipe.Recipe.recipe_service;
 
-import com.recipe.Recipe.recipe_service.RecipeEntity;
-import com.recipe.Recipe.service.KafkaEventService;  //Need to connect Via HTTP
+import com.recipe.common.entities.RecipeEntity;
+import com.recipe.common.clients.AuthServiceClient;
 import com.recipe.Recipe.recipe_service.RecipeService;
-import com.recipe.Recipe.service.sec.UserInfoService;  //Need to connect Via HTTP
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,15 +23,16 @@ import java.util.List;
 @RestController
 public class RecipeController{
 
-    RecipeService recipeService;
-    KafkaEventService kafkaEventService;
-    UserInfoService userInfoService;
+    private final RecipeService recipeService;
+    private final AuthServiceClient authServiceClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    public RecipeController(RecipeService recipeService, KafkaEventService kafkaEventService, UserInfoService userInfoService) {
+    public RecipeController(RecipeService recipeService, AuthServiceClient authServiceClient, 
+                          KafkaTemplate<String, Object> kafkaTemplate) {
         this.recipeService = recipeService;
-        this.kafkaEventService = kafkaEventService;
-        this.userInfoService = userInfoService;
+        this.authServiceClient = authServiceClient;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @GetMapping ("getAllRecipes")
@@ -44,7 +45,7 @@ public class RecipeController{
         if (isAdmin) {
             return recipeService.getAllRecipes();
         }
-        String region = userInfoService.getRegionByEmail(authentication.getName());
+        String region = authServiceClient.getRegionByEmail(authentication.getName());
         if (region == null || region.isBlank()) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
@@ -63,11 +64,11 @@ public class RecipeController{
         }
         // set display name and stable owner email
         String email = authentication.getName();
-        String displayName = userInfoService.getUsernameByEmail(email);
+        String displayName = authServiceClient.getUsernameByEmail(email);
         recipe.setAuthor(displayName != null ? displayName : email);
         recipe.setOwnerEmail(email);
 
-        kafkaEventService.publishRecipeCreatedEvent(recipe);
+        kafkaTemplate.send("recipe-created", recipe);
         return ResponseEntity.ok("Recipe creation event published!");
     }
 
@@ -92,7 +93,7 @@ public class RecipeController{
             isOwner = authentication.getName().equalsIgnoreCase(existing.getOwnerEmail());
         } else {
             // legacy fallback: compare display name to existing author
-            String currentName = userInfoService.getUsernameByEmail(authentication.getName());
+            String currentName = authServiceClient.getUsernameByEmail(authentication.getName());
             isOwner = currentName != null && currentName.equalsIgnoreCase(existing.getAuthor());
         }
 
@@ -105,7 +106,7 @@ public class RecipeController{
         newRecipeData.setAuthor(existing.getAuthor());
         newRecipeData.setOwnerEmail(existing.getOwnerEmail());
 
-        kafkaEventService.publishRecipeUpdatedEvent(newRecipeData);
+        kafkaTemplate.send("recipe-updated", newRecipeData);
         return ResponseEntity.ok("Recipe Update event published!");
     }
 
@@ -127,7 +128,7 @@ public class RecipeController{
         if (existing.getOwnerEmail() != null && !existing.getOwnerEmail().isBlank()) {
             isOwner = authentication.getName().equalsIgnoreCase(existing.getOwnerEmail());
         } else {
-            String currentName = userInfoService.getUsernameByEmail(authentication.getName());
+            String currentName = authServiceClient.getUsernameByEmail(authentication.getName());
             isOwner = currentName != null && currentName.equalsIgnoreCase(existing.getAuthor());
         }
 
@@ -135,7 +136,7 @@ public class RecipeController{
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
         }
 
-        kafkaEventService.publishRecipeDeletedEvent(id);
+        kafkaTemplate.send("recipe-deleted", String.valueOf(id));
         return ResponseEntity.ok("Recipe Deletion event published!");
     }
 

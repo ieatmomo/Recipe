@@ -1,11 +1,11 @@
-package com.recipe.Recipe.recipe_service;
+package com.recipe.recipe_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.recipe.common.entities.RecipeEntity;
-import com.recipe.Recipe.recipe_service.RecipeRepo;
+import com.recipe.recipe_service.RecipeRepo;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +28,7 @@ public class RecipeService {
         try{
             List<RecipeEntity> recipeList = new ArrayList<>();
             recipeRepo.findAll().forEach(recipeList::add);
-            if (recipeList.isEmpty()){
-                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-            }
+            // Always return 200 OK with the list (even if empty) so frontend can parse JSON
             return new ResponseEntity<>(recipeList, HttpStatus.OK);
         } catch(Exception ex){
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -40,9 +38,7 @@ public class RecipeService {
     public ResponseEntity<List<RecipeEntity>> getAllRecipesByRegion(String region){
         try{
             List<RecipeEntity> recipeList = recipeRepo.findByRegionIgnoreCase(region);
-            if (recipeList.isEmpty()){
-                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-            }
+            // Always return 200 OK with the list (even if empty) so frontend can parse JSON
             return new ResponseEntity<>(recipeList, HttpStatus.OK);
         } catch(Exception ex){
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

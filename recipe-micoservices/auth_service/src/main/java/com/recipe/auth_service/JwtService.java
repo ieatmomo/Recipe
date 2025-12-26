@@ -1,4 +1,4 @@
-package com.recipe.Recipe.auth_service;
+package com.recipe.auth_service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -9,13 +9,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.recipe.Recipe.auth_service.UserInfo;
+import com.recipe.auth_service.UserInfo;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtService {
@@ -27,6 +29,10 @@ public class JwtService {
     }
 
     public String generateToken(String email, String roles, String region) {
+        return generateToken(email, roles, region, null);
+    }
+
+    public String generateToken(String email, String roles, String region, Set<String> acgs) {
         Map<String, Object> claims = new HashMap<>();
         if (roles != null && !roles.isEmpty()) {
             claims.put("roles", roles);
@@ -34,6 +40,11 @@ public class JwtService {
         if (region != null && !region.isEmpty()) {
             claims.put("region", region);
         }
+        if (acgs != null && !acgs.isEmpty()) {
+            // Store ACGs as comma-separated string
+            claims.put("acgs", String.join(",", acgs));
+        }
+        
         return createToken(claims, email);
     }
 

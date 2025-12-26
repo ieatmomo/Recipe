@@ -1,4 +1,4 @@
-package com.recipe.Recipe.auth_service;
+package com.recipe.auth_service;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,8 +16,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import com.recipe.Recipe.auth_service.JwtService;
-import com.recipe.Recipe.auth_service.UserInfoService;
+import com.recipe.auth_service.JwtService;
+import com.recipe.auth_service.UserInfoService;
 
 
 @Component

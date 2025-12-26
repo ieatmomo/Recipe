@@ -1,18 +1,23 @@
-package com.recipe.Recipe.search_service;
+package com.recipe.search_service;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.recipe.Recipe.search_service.MealSummary;
-import com.recipe.Recipe.search_service.RecipeSearchEntity;
-import com.recipe.Recipe.search_service.ElasticService;
+import com.recipe.search_service.MealSummary;
+import com.recipe.search_service.RecipeSearchEntity;
+import com.recipe.search_service.ElasticService;
 import com.recipe.common.clients.AuthServiceClient;
 
 @RestController
@@ -56,5 +61,38 @@ public class ElasticController {
     @GetMapping("category/{category}/random5")
     public List<MealSummary> randomFiveByCategory(@PathVariable String category){
         return elasticService.randomMealSummariesByCategory(category, 5);
+    }
+
+    // Internal endpoints for Kafka consumer (no authentication required)
+    @PostMapping("/index")
+    public ResponseEntity<RecipeSearchEntity> indexRecipe(@RequestBody RecipeSearchEntity recipe) {
+        try {
+            RecipeSearchEntity saved = elasticService.save(recipe);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            System.err.println("Error indexing recipe: " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @PutMapping("/index/{id}")
+    public ResponseEntity<String> updateRecipeIndex(@PathVariable Long id, @RequestBody RecipeSearchEntity recipe) {
+        try {
+            recipe.setId(String.valueOf(id));
+            elasticService.save(recipe);
+            return ResponseEntity.ok("Recipe updated in index");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error updating recipe: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/index/{id}")
+    public ResponseEntity<String> deleteFromIndex(@PathVariable Long id) {
+        try {
+            elasticService.deleteById(id);
+            return ResponseEntity.ok("Recipe deleted from index");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error deleting recipe: " + e.getMessage());
+        }
     }
 }

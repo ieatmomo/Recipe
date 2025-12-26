@@ -1,4 +1,4 @@
-package com.recipe.Recipe.kafka_service;
+package com.recipe.kafka_service;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +19,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.web.client.RestTemplate;
 
 
 // Marks this class as a configuration class — Spring will automatically load it at startup

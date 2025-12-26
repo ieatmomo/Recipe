@@ -3,7 +3,13 @@ package com.recipe.common.clients;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import com.recipe.common.dtos.UserDTO;
+
+import java.util.List;
+import java.util.ArrayList;
 
 @Component
 public class AuthServiceClient {
@@ -50,6 +56,24 @@ public class AuthServiceClient {
         } catch (Exception e) {
             System.err.println("AuthServiceClient.getUserByEmail error: " + e.getMessage());
             return null;
+        }
+    }
+    
+    /**
+     * Get all user emails that have a specific COI (Community of Interest)
+     */
+    public List<String> getUsersWithCOI(String coi) {
+        try {
+            ResponseEntity<List<String>> response = restTemplate.exchange(
+                authServiceUrl + "/auth/users/coi/" + coi,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<String>>() {}
+            );
+            return response.getBody() != null ? response.getBody() : new ArrayList<>();
+        } catch (Exception e) {
+            System.err.println("AuthServiceClient.getUsersWithCOI error: " + e.getMessage());
+            return new ArrayList<>();
         }
     }
 }

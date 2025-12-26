@@ -1,31 +1,105 @@
 version: '3.9'
 
 services:
-  # MySQL
-  mysql:
+  # MySQL Database for recipes
+  mysql-recipe:
     image: mysql:8.0
-    container_name: mysql
+    container_name: mysql-recipe
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-root}
       MYSQL_DATABASE: recipe_db
     ports:
-      - "3307:3306"   # external:internal
+      - "3307:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_recipe_data:/var/lib/mysql
     networks:
-      - recipe-network
+      - microservices-network
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -proot || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
+
+  # MySQL Database for authentication (legacy - to be deprecated)
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-root}
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_auth_data:/var/lib/mysql
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -proot || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # PostgreSQL for Keycloak
+  postgres-keycloak:
+    image: postgres:15-alpine
+    container_name: postgres-keycloak
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak123}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
 
   # Kafka
   kafka:
     image: apache/kafka:3.7.1
-    container_name: kafka
+    container_name: kafka-microservices
     restart: unless-stopped
     ports:
       - "9092:9092"
@@ -40,26 +114,22 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-
-    # Healthcheck
+    networks:
+      - microservices-network
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9092'"]
       interval: 10s
       timeout: 5s
       retries: 10
-
-    networks:
-      - recipe-network
-
+      start_period: 30s
 
   # Elasticsearch
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.29
-    container_name: elasticsearch
+    container_name: elasticsearch-microservices
     restart: unless-stopped
     environment:
       discovery.type: single-node
@@ -68,20 +138,20 @@ services:
     ports:
       - "9200:9200"
     volumes:
-      - es_data:/usr/share/elasticsearch/data
+      - es_microservices_data:/usr/share/elasticsearch/data
     networks:
-      - recipe-network
+      - microservices-network
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 60s
 
-  #Kibana: 
+  # Kibana
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.29  
-    container_name: kibana
+    container_name: kibana-microservices
     restart: unless-stopped
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
@@ -90,39 +160,168 @@ services:
     depends_on:
       - elasticsearch
     networks:
-      - recipe-network
+      - microservices-network
 
-  # Spring Boot 
-  backend:
+  # Auth Service
+  auth-service:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: recipe-backend
+      context: ./recipe-micoservices
+      dockerfile: auth_service/Dockerfile
+    container_name: auth-service
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "8081:8081"
     depends_on:
-      mysql:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      elasticsearch:
+      mysql-auth:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/recipe_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASS:-root}
       JWT_SECRET: ${JWT_SECRET:-default_secret}
       DB_PASS: ${DB_PASS:-root}
     networks:
-      - recipe-network
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Recipe Service
+  recipe-service:
+    build:
+      context: ./recipe-micoservices
+      dockerfile: recipe_service/Dockerfile
+    container_name: recipe-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql-recipe:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-recipe:3306/recipe_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASS:-root}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET:-default_secret}
+      DB_PASS: ${DB_PASS:-root}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      SEARCH_SERVICE_URL: http://search-service:8083
+      # Keycloak OAuth2 configuration
+      AUTH_MODE: ${AUTH_MODE:-keycloak}
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/recipe
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/recipe/protocol/openid-connect/certs
+      KEYCLOAK_REALM: recipe
+      KEYCLOAK_CLIENT_ID: recipe-service
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-recipe-service-secret}
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Search Service
+  search-service:
+    build:
+      context: ./recipe-micoservices
+      dockerfile: search_service/Dockerfile
+    container_name: search-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    environment:
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      JWT_SECRET: ${JWT_SECRET:-default_secret}
+      AUTH_SERVICE_URL: http://auth-service:8081
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Kafka Service
+  kafka-service:
+    build:
+      context: ./recipe-micoservices
+      dockerfile: kafka_service/Dockerfile
+    container_name: kafka-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      recipe-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RECIPE_SERVICE_URL: http://recipe-service:8082
+      SEARCH_SERVICE_URL: http://search-service:8083
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Gateway Service
+  gateway-service:
+    build:
+      context: ./recipe-micoservices
+      dockerfile: gateway_service/Dockerfile
+    container_name: gateway-service
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      recipe-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      RECIPE_SERVICE_URL: http://recipe-service:8082
+      SEARCH_SERVICE_URL: http://search-service:8083
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
 networks:
-  recipe-network:
+  microservices-network:
     driver: bridge
 
 volumes:
-  mysql_data:
-  es_data:
+  mysql_recipe_data:
+  mysql_auth_data:
+  es_microservices_data:
+  postgres_keycloak_data:

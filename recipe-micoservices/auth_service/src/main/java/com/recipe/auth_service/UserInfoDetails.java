@@ -1,10 +1,10 @@
-package com.recipe.Recipe.auth_service;
+package com.recipe.auth_service;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.recipe.Recipe.auth_service.UserInfo;
+import com.recipe.auth_service.UserInfo;
 
 import java.util.Arrays;
 import java.util.Collection;

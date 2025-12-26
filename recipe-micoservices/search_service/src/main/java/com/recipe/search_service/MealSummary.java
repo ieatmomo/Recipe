@@ -1,4 +1,4 @@
-package com.recipe.Recipe.search_service;
+package com.recipe.search_service;
 
 public class MealSummary {
     private String mealId;     // from ES: meal_id

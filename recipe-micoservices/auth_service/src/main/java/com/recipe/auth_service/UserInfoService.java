@@ -1,4 +1,4 @@
-package com.recipe.Recipe.auth_service;
+package com.recipe.auth_service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -8,11 +8,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.recipe.Recipe.auth_service.UserInfo;
-import com.recipe.Recipe.auth_service.UserInfoRepository;
+import com.recipe.auth_service.UserInfo;
+import com.recipe.auth_service.UserInfoRepository;
 
 import java.util.Optional;
 import java.util.Locale;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 
 @Service
@@ -60,5 +62,42 @@ public class UserInfoService implements UserDetailsService {
 
     public String getRegionByEmail(String email) {
         return repository.findByEmail(email).map(UserInfo::getRegion).orElse(null);
+    }
+
+    public Optional<UserInfo> findByEmail(String email) {
+        return repository.findByEmail(email);
+    }
+
+    public UserInfo saveUser(UserInfo user) {
+        return repository.save(user);
+    }
+
+    public Set<String> getUserAcgs(String email) {
+        return repository.findByEmail(email).map(UserInfo::getAccessControlGroups).orElse(Set.of());
+    }
+
+    public Set<String> getUserCois(String email) {
+        return repository.findByEmail(email).map(UserInfo::getCommunitiesOfInterest).orElse(Set.of());
+    }
+    
+    /**
+     * Get all user emails that have a specific COI
+     */
+    public List<String> getUserEmailsWithCoi(String coi) {
+        List<String> userEmails = new ArrayList<>();
+        Iterable<UserInfo> allUsers = repository.findAll();
+        
+        for (UserInfo user : allUsers) {
+            if (user.getCommunitiesOfInterest() != null && 
+                user.getCommunitiesOfInterest().contains(coi)) {
+                userEmails.add(user.getEmail());
+            }
+        }
+        
+        return userEmails;
+    }
+
+    public Iterable<UserInfo> findAll() {
+        return repository.findAll();
     }
 }

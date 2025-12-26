@@ -1,4 +1,4 @@
-package com.recipe.Recipe.auth_service;
+package com.recipe.auth_service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

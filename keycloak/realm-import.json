@@ -1,0 +1,299 @@
+{
+  "realm": "recipe",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_USER",
+        "description": "Standard user role"
+      },
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Administrator role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "recipe-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "recipe-service-secret",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["profile", "email", "roles", "recipe-attributes"],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "gateway-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "gateway-service-secret",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["profile", "email", "roles", "recipe-attributes"],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "frontend-app",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:5173"],
+      "defaultClientScopes": ["profile", "email", "roles", "recipe-attributes"],
+      "optionalClientScopes": []
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "roles",
+      "description": "OpenID Connect scope for add user roles to the access token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "${rolesScopeConsentText}"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "recipe-attributes",
+      "description": "Custom attributes for recipe application",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "region-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "region",
+            "claim.name": "region",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "acg-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "acg",
+            "claim.name": "acg",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "true"
+          }
+        },
+        {
+          "name": "coi-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "coi",
+            "claim.name": "coi",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@example.com",
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_ADMIN", "ROLE_USER"],
+      "attributes": {
+        "region": ["ASIA"],
+        "acg": ["PUBLIC", "CONFIDENTIAL"],
+        "coi": []
+      }
+    },
+    {
+      "username": "alice@example.com",
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Alice123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "attributes": {
+        "region": ["ASIA"],
+        "acg": ["PUBLIC"],
+        "coi": ["DESSERT"]
+      }
+    },
+    {
+      "username": "bob@example.com",
+      "email": "bob@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Bob",
+      "lastName": "Johnson",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Bob123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "attributes": {
+        "region": ["EU"],
+        "acg": ["PUBLIC", "CONFIDENTIAL"],
+        "coi": ["BEEF"]
+      }
+    },
+    {
+      "username": "charlie@example.com",
+      "email": "charlie@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Charlie",
+      "lastName": "Brown",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Charlie123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "attributes": {
+        "region": ["AFRICA"],
+        "acg": ["PUBLIC"],
+        "coi": ["CHICKEN"]
+      }
+    },
+    {
+      "username": "dave@example.com",
+      "email": "dave@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Dave",
+      "lastName": "Wilson",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Dave123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "attributes": {
+        "region": ["EU"],
+        "acg": ["PUBLIC", "SECRET"],
+        "coi": ["SEAFOOD"]
+      }
+    },
+    {
+      "username": "eve@example.com",
+      "email": "eve@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Eve",
+      "lastName": "Davis",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Eve123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "attributes": {
+        "region": ["ASIA"],
+        "acg": ["PUBLIC"],
+        "coi": ["VEGETARIAN"]
+      }
+    }
+  ]
+}

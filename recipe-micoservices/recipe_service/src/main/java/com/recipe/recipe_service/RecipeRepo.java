@@ -1,4 +1,4 @@
-package com.recipe.Recipe.recipe_service;
+package com.recipe.recipe_service;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;

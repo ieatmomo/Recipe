@@ -1,15 +1,21 @@
-package com.recipe.Recipe.recipe_service;
+package com.recipe.recipe_service;
 
 import com.recipe.common.entities.RecipeEntity;
 import com.recipe.common.clients.AuthServiceClient;
-import com.recipe.Recipe.recipe_service.RecipeService;
+import com.recipe.common.services.AbacService;
+import com.recipe.recipe_service.RecipeService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,58 +24,273 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public class RecipeController{
+    
+    private static final Logger logger = LoggerFactory.getLogger(RecipeController.class);
 
     private final RecipeService recipeService;
-    private final AuthServiceClient authServiceClient;
+    private final AuthServiceClient authServiceClient;  // Can be null if Feign not configured
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final JwtService jwtService;
+    private final AbacService abacService;
+    private final NotificationService notificationService;
+    private final RecipeRepo recipeRepo;
 
     @Autowired
-    public RecipeController(RecipeService recipeService, AuthServiceClient authServiceClient, 
-                          KafkaTemplate<String, Object> kafkaTemplate) {
+    public RecipeController(RecipeService recipeService, 
+                          @Autowired(required = false) AuthServiceClient authServiceClient, 
+                          KafkaTemplate<String, Object> kafkaTemplate,
+                          JwtService jwtService,
+                          AbacService abacService,
+                          @Autowired(required = false) NotificationService notificationService,
+                          RecipeRepo recipeRepo) {
         this.recipeService = recipeService;
         this.authServiceClient = authServiceClient;
         this.kafkaTemplate = kafkaTemplate;
+        this.jwtService = jwtService;
+        this.abacService = abacService;
+        this.notificationService = notificationService;
+        this.recipeRepo = recipeRepo;
     }
 
     @GetMapping ("getAllRecipes")
-    public ResponseEntity<List<RecipeEntity>> getAllRecipes(Authentication authentication){
+    public ResponseEntity<List<RecipeEntity>> getAllRecipes(Authentication authentication, HttpServletRequest request){
+        logger.info("RecipeController.getAllRecipes: START");
+        logger.info("RecipeController: authentication={}", authentication);
+        logger.info("RecipeController: authentication.isAuthenticated()={}", 
+                   authentication != null ? authentication.isAuthenticated() : "null");
+        
         if (authentication == null || !authentication.isAuthenticated()) {
+            logger.warn("RecipeController: Returning UNAUTHORIZED - auth is null or not authenticated");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+        
+        logger.info("RecipeController: authentication.getName()={}", authentication.getName());
+        logger.info("RecipeController: authentication.getAuthorities()={}", 
+                   authentication.getAuthorities().stream()
+                       .map(a -> a.getAuthority())
+                       .collect(Collectors.joining(", ")));
+        
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        
+        logger.info("RecipeController: isAdmin={}", isAdmin);
+        
+        // Extract region and ACGs from OAuth2 JWT token
+        String region = null;
+        Set<String> userAcgs = new HashSet<>();
+        
+        try {
+            if (authentication instanceof JwtAuthenticationToken) {
+                JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+                Jwt jwt = jwtAuth.getToken();
+                
+                // Extract region claim
+                region = jwt.getClaimAsString("region");
+                logger.info("RecipeController: Extracted region from OAuth2 JWT: {}", region);
+                
+                // Extract ACG claim (multi-valued)
+                Object acgClaim = jwt.getClaim("acg");
+                if (acgClaim instanceof List) {
+                    userAcgs = new HashSet<>((List<String>) acgClaim);
+                    logger.info("RecipeController: Extracted ACGs from OAuth2 JWT: {}", userAcgs);
+                } else if (acgClaim instanceof String) {
+                    userAcgs = Set.of(((String) acgClaim).split(","));
+                    logger.info("RecipeController: Extracted ACGs from OAuth2 JWT (string): {}", userAcgs);
+                }
+            } else {
+                // Legacy JWT mode - fallback to JwtService
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    String token = authHeader.substring(7);
+                    region = jwtService.extractRegion(token);
+                    logger.info("RecipeController: Extracted region from legacy JWT: {}", region);
+                    
+                    String acgClaim = jwtService.extractClaim(token, claims -> claims.get("acgs", String.class));
+                    if (acgClaim != null && !acgClaim.isBlank()) {
+                        userAcgs = Set.of(acgClaim.split(","));
+                        logger.info("RecipeController: Extracted ACGs from legacy JWT: {}", userAcgs);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("RecipeController: Failed to extract claims from token: {}", e.getMessage());
+        }
+        
+        // Get all recipes first
+        ResponseEntity<List<RecipeEntity>> allRecipesResponse;
         if (isAdmin) {
-            return recipeService.getAllRecipes();
+            logger.info("RecipeController: User is ADMIN - getting all recipes");
+            allRecipesResponse = recipeService.getAllRecipes();
+        } else if (region != null && !region.isBlank()) {
+            logger.info("RecipeController: User is NOT admin - filtering by region={}", region);
+            allRecipesResponse = recipeService.getAllRecipesByRegion(region);
+        } else {
+            logger.warn("RecipeController: No region found in token, getting all recipes");
+            allRecipesResponse = recipeService.getAllRecipes();
         }
-        String region = authServiceClient.getRegionByEmail(authentication.getName());
-        if (region == null || region.isBlank()) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        
+        // Apply ABAC filtering
+        List<RecipeEntity> recipes = allRecipesResponse.getBody();
+        if (recipes != null) {
+            List<RecipeEntity> filteredRecipes = abacService.filterRecipesByAccess(recipes, userAcgs, isAdmin);
+            logger.info("RecipeController: Filtered {} recipes down to {} after ABAC check", 
+                       recipes.size(), filteredRecipes.size());
+            return ResponseEntity.ok(filteredRecipes);
         }
-        return recipeService.getAllRecipesByRegion(region);
+        
+        return allRecipesResponse;
     }
 
     @GetMapping("/getRecipeById/{id}")
-    public ResponseEntity<RecipeEntity> getRecipeById(@PathVariable("id") Long id){
-        return recipeService.getRecipeById(id);
+    public ResponseEntity<RecipeEntity> getRecipeById(@PathVariable("id") Long id, 
+                                                      Authentication authentication, 
+                                                      HttpServletRequest request){
+        ResponseEntity<RecipeEntity> response = recipeService.getRecipeById(id);
+        RecipeEntity recipe = response.getBody();
+        
+        if (recipe == null) {
+            return response;
+        }
+        
+        // Check ABAC access
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            
+            Set<String> userAcgs = new HashSet<>();
+            try {
+                if (authentication instanceof JwtAuthenticationToken) {
+                    JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
+                    Jwt jwt = jwtAuth.getToken();
+                    
+                    Object acgClaim = jwt.getClaim("acg");
+                    if (acgClaim instanceof List) {
+                        userAcgs = new HashSet<>((List<String>) acgClaim);
+                    } else if (acgClaim instanceof String) {
+                        userAcgs = Set.of(((String) acgClaim).split(","));
+                    }
+                } else {
+                    // Legacy JWT mode
+                    String authHeader = request.getHeader("Authorization");
+                    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        String token = authHeader.substring(7);
+                        String acgClaim = jwtService.extractClaim(token, claims -> claims.get("acgs", String.class));
+                        if (acgClaim != null && !acgClaim.isBlank()) {
+                            userAcgs = Set.of(acgClaim.split(","));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Failed to extract ACGs from token: {}", e.getMessage());
+            }
+            
+            if (!abacService.canUserAccessRecipe(recipe, userAcgs, isAdmin)) {
+                logger.warn("User {} denied access to recipe {} due to ACG restrictions", 
+                           authentication.getName(), id);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+        
+        return response;
     }
 
     @PostMapping("/addRecipe")
-    public ResponseEntity<String> addRecipe(@RequestBody RecipeEntity recipe, Authentication authentication){
+    public ResponseEntity<String> addRecipe(@RequestBody RecipeEntity recipe, Authentication authentication, HttpServletRequest request){
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
-        // set display name and stable owner email
+        
+        // Extract user info from JWT token
         String email = authentication.getName();
-        String displayName = authServiceClient.getUsernameByEmail(email);
-        recipe.setAuthor(displayName != null ? displayName : email);
+        String displayName = email;  // Default to email
+        
+        // Try to get username from authServiceClient if available
+        if (authServiceClient != null) {
+            try {
+                String username = authServiceClient.getUsernameByEmail(email);
+                if (username != null && !username.isEmpty()) {
+                    displayName = username;
+                }
+            } catch (Exception e) {
+                logger.warn("RecipeController.addRecipe: Failed to get username from auth-service: {}", e.getMessage());
+            }
+        }
+        
+        recipe.setAuthor(displayName);
         recipe.setOwnerEmail(email);
+        
+        // Note: ACG and COI should be set in the request body by the client
+        // isRestricted, accessControlGroups, and communityTags fields are accepted from request
+        logger.info("Creating recipe with isRestricted={}, ACGs={}, COI tags={}", 
+                   recipe.getIsRestricted(), recipe.getAccessControlGroups(), recipe.getCommunityTags());
 
-        kafkaTemplate.send("recipe-created", recipe);
-        return ResponseEntity.ok("Recipe creation event published!");
+        // Save recipe first to get the ID
+        RecipeEntity savedRecipe = recipeRepo.save(recipe);
+        
+        // Create notifications for users with matching COIs
+        try {
+            if (notificationService != null) {
+                notificationService.createNotificationsForRecipe(savedRecipe);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to create notifications for recipe {}: {}", savedRecipe.getName(), e.getMessage());
+        }
+        
+        // Publish to Kafka
+        kafkaTemplate.send("recipe-created", savedRecipe);
+        return ResponseEntity.ok("Recipe created and notifications sent!");
+    }
+
+    // Internal endpoint for Kafka consumer - no authentication required
+    @PostMapping("/recipes")
+    public ResponseEntity<RecipeEntity> addRecipeInternal(@RequestBody RecipeEntity recipe){
+        logger.info("RecipeController.addRecipeInternal: Saving recipe from Kafka consumer: {}", recipe.getName());
+        ResponseEntity<RecipeEntity> response = recipeService.addRecipe(recipe);
+        
+        logger.info("RecipeController.addRecipeInternal: Recipe saved, response status: {}", response.getStatusCode());
+        logger.info("RecipeController.addRecipeInternal: notificationService null? {}", notificationService == null);
+        
+        // Create notifications for users with matching COIs
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            logger.info("RecipeController.addRecipeInternal: Attempting to create notifications for recipe: {}", recipe.getName());
+            try {
+                if (notificationService != null) {
+                    logger.info("RecipeController.addRecipeInternal: Calling notificationService.createNotificationsForRecipe()");
+                    notificationService.createNotificationsForRecipe(response.getBody());
+                    logger.info("RecipeController.addRecipeInternal: Notifications created successfully");
+                } else {
+                    logger.warn("RecipeController.addRecipeInternal: NotificationService is null");
+                }
+            } catch (Exception e) {
+                logger.error("Failed to create notifications for recipe {}: {}", recipe.getName(), e.getMessage(), e);
+            }
+        } else {
+            logger.warn("RecipeController.addRecipeInternal: Response not 2xx or body is null. Status: {}, Body: {}", 
+                response.getStatusCode(), response.getBody());
+        }
+        
+        return response;
+    }
+
+    // Internal endpoint for Kafka consumer - no authentication required
+    @PutMapping("/recipes/{id}")
+    public ResponseEntity<RecipeEntity> updateRecipeInternal(@PathVariable("id") Long id, @RequestBody RecipeEntity recipe){
+        logger.info("RecipeController.updateRecipeInternal: Updating recipe {} from Kafka consumer", id);
+        return recipeService.updateRecipeById(id, recipe);
+    }
+
+    // Internal endpoint for Kafka consumer - no authentication required
+    @DeleteMapping("/recipes/{id}")
+    public ResponseEntity<String> deleteRecipeInternal(@PathVariable("id") Long id){
+        logger.info("RecipeController.deleteRecipeInternal: Deleting recipe {} from Kafka consumer", id);
+        return recipeService.deleteRecipeById(id);
     }
 
     @PutMapping("/updateRecipeById/{id}")

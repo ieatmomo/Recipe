@@ -82,8 +82,9 @@ public class RecipeController{
         
         logger.info("RecipeController: isAdmin={}", isAdmin);
         
-        // Extract region and ACGs from OAuth2 JWT token
+        // Extract username/email and region from token
         String region = null;
+        String userEmail = null;
         Set<String> userAcgs = new HashSet<>();
         
         try {
@@ -95,29 +96,32 @@ public class RecipeController{
                 region = jwt.getClaimAsString("region");
                 logger.info("RecipeController: Extracted region from OAuth2 JWT: {}", region);
                 
-                // Extract ACG claim (multi-valued)
-                Object acgClaim = jwt.getClaim("acg");
-                if (acgClaim instanceof List) {
-                    userAcgs = new HashSet<>((List<String>) acgClaim);
-                    logger.info("RecipeController: Extracted ACGs from OAuth2 JWT: {}", userAcgs);
-                } else if (acgClaim instanceof String) {
-                    userAcgs = Set.of(((String) acgClaim).split(","));
-                    logger.info("RecipeController: Extracted ACGs from OAuth2 JWT (string): {}", userAcgs);
+                // Extract email/username for fetching ACGs from auth service
+                userEmail = jwt.getClaimAsString("preferred_username");
+                if (userEmail == null) {
+                    userEmail = jwt.getClaimAsString("email");
                 }
+                if (userEmail == null) {
+                    userEmail = jwt.getSubject();
+                }
+                logger.info("RecipeController: Extracted userEmail from OAuth2 JWT: {}", userEmail);
             } else {
                 // Legacy JWT mode - fallback to JwtService
                 String authHeader = request.getHeader("Authorization");
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                     String token = authHeader.substring(7);
                     region = jwtService.extractRegion(token);
-                    logger.info("RecipeController: Extracted region from legacy JWT: {}", region);
-                    
-                    String acgClaim = jwtService.extractClaim(token, claims -> claims.get("acgs", String.class));
-                    if (acgClaim != null && !acgClaim.isBlank()) {
-                        userAcgs = Set.of(acgClaim.split(","));
-                        logger.info("RecipeController: Extracted ACGs from legacy JWT: {}", userAcgs);
-                    }
+                    userEmail = jwtService.extractUsername(token);
+                    logger.info("RecipeController: Extracted region={}, userEmail={} from legacy JWT", region, userEmail);
                 }
+            }
+            
+            // Fetch ACGs from auth service (always up-to-date from database)
+            if (userEmail != null && authServiceClient != null) {
+                userAcgs = authServiceClient.getUserAcgs(userEmail);
+                logger.info("RecipeController: Fetched ACGs from auth service for {}: {}", userEmail, userAcgs);
+            } else if (userEmail != null) {
+                logger.warn("RecipeController: AuthServiceClient not available, ACG filtering will be limited");
             }
         } catch (Exception e) {
             logger.error("RecipeController: Failed to extract claims from token: {}", e.getMessage());

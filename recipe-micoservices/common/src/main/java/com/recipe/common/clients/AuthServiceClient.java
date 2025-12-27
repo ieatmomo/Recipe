@@ -76,4 +76,40 @@ public class AuthServiceClient {
             return new ArrayList<>();
         }
     }
+
+    /**
+     * Get user's Access Control Groups (ACGs)
+     */
+    public java.util.Set<String> getUserAcgs(String email) {
+        try {
+            ResponseEntity<java.util.Set<String>> response = restTemplate.exchange(
+                authServiceUrl + "/auth/user/" + email + "/acg",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<java.util.Set<String>>() {}
+            );
+            return response.getBody() != null ? response.getBody() : new java.util.HashSet<>();
+        } catch (Exception e) {
+            System.err.println("AuthServiceClient.getUserAcgs error: " + e.getMessage());
+            return new java.util.HashSet<>();
+        }
+    }
+
+    /**
+     * Get user's Communities of Interest (COIs)
+     */
+    public java.util.Set<String> getUserCois(String email) {
+        try {
+            ResponseEntity<java.util.Set<String>> response = restTemplate.exchange(
+                authServiceUrl + "/auth/user/" + email + "/coi",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<java.util.Set<String>>() {}
+            );
+            return response.getBody() != null ? response.getBody() : new java.util.HashSet<>();
+        } catch (Exception e) {
+            System.err.println("AuthServiceClient.getUserCois error: " + e.getMessage());
+            return new java.util.HashSet<>();
+        }
+    }
 }

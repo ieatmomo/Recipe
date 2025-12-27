@@ -22,6 +22,7 @@ public class UserInfoDetails implements UserDetails {
         this.password = userInfo.getPassword();
         this.authorities = Arrays.stream(userInfo.getRoles().split(","))
                 .map(String::trim)
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
